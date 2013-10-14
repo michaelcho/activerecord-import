@@ -120,7 +120,7 @@ class ActiveRecord::Base
     #  # Example using column_names and array_of_values
     #  columns = [ :author_name, :title ]
     #  values = [ [ 'zdennis', 'test post' ], [ 'jdoe', 'another test post' ] ]
-    #  BlogPost.import columns, values 
+    #  BlogPost.import columns, values
     #
     #  # Example using column_names, array_of_value and options
     #  columns = [ :author_name, :title ]
@@ -142,7 +142,7 @@ class ActiveRecord::Base
     #
     # == On Duplicate Key Update (MySQL only)
     #
-    # The :on_duplicate_key_update option can be either an Array or a Hash. 
+    # The :on_duplicate_key_update option can be either an Array or a Hash.
     #
     # ==== Using an Array
     #
@@ -305,13 +305,17 @@ class ActiveRecord::Base
           number_inserted += 1
         end
       else
+
+        # selector sql for unique index, eg "WHERE field1 = 2 AND field2 = 1 AND field3 IS NULL"
+        selector_sql = connection.selector_sql( column_names, array_of_attributes, options )
+
         # generate the sql
-        post_sql_statements = connection.post_sql_statements( quoted_table_name, options )
+        post_sql_statements = connection.post_sql_statements( quoted_table_name, options, column_names, array_of_attributes )
 
         # perform the inserts
         number_inserted = connection.insert_many( [ insert_sql, post_sql_statements ].flatten,
                                                   values_sql,
-                                                  "#{self.class.name} Create Many Without Validations Or Callbacks" )
+                                                  "#{self.class.name} Create Many Without Validations Or Callbacks", selector_sql, quoted_table_name )
       end
       number_inserted
     end
@@ -339,6 +343,7 @@ class ActiveRecord::Base
             end
           end
         end
+
         "(#{my_values.join(',')})"
       end
     end

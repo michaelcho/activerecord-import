@@ -1,5 +1,14 @@
 module ActiveRecord::Import::AbstractAdapter
   module InstanceMethods
+
+    NO_MAX_PACKET = 0
+    def selector_sql( column_names, array_of_attributes, options )
+      # An empty method which does nothing for all adapters EXCEPT postgresql.
+      # Postgresql Adapter creates its own equivalent method used to replace "on duplicate key update" MySQL function
+      # which is not available in Postgres.
+      return []
+    end
+
     def next_value_for_sequence(sequence_name)
       %{#{sequence_name}.nextval}
     end
@@ -14,7 +23,7 @@ module ActiveRecord::Import::AbstractAdapter
       end
 
       sql2insert = base_sql + values.join( ',' ) + post_sql
-      insert( sql2insert, *args )
+      insert( sql2insert, *args.first )
 
       number_of_inserts
     end
@@ -42,10 +51,10 @@ module ActiveRecord::Import::AbstractAdapter
     end
 
     # Returns an array of post SQL statements given the passed in options.
-    def post_sql_statements( table_name, options ) # :nodoc:
+    def post_sql_statements( table_name, options, column_names, array_of_attributes ) # :nodoc:
       post_sql_statements = []
       if options[:on_duplicate_key_update]
-        post_sql_statements << sql_for_on_duplicate_key_update( table_name, options[:on_duplicate_key_update] )
+        post_sql_statements << sql_for_on_duplicate_key_update( table_name, options[:on_duplicate_key_update], column_names, array_of_attributes )
       end
 
       #custom user post_sql
